@@ -55,16 +55,47 @@ export const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteEvent = async (eventId) => {
-    try {
-      if (window.confirm("Are you sure you want to permanently delete this event? This action cannot be undone.")) {
-        await api.delete(`/events/${eventId}`);
-        toast.success('Event deleted successfully.');
-        fetchDashboardData();
+  const handleDeleteEvent = (eventId) => {
+    toast((t) => (
+      <div className="flex flex-col gap-2 p-1">
+        <p className="text-sm font-semibold text-slate-200">
+          Permanently delete this event?
+        </p>
+        <p className="text-xs text-slate-400">This action cannot be undone.</p>
+        <div className="flex justify-end gap-2 mt-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1.5 text-xs font-semibold text-slate-400 bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await api.delete(`/events/${eventId}`);
+                toast.success('Event deleted successfully.');
+                fetchDashboardData();
+              } catch (err) {
+                toast.error('Failed to delete event: ' + (err.response?.data?.message || err.message));
+              }
+            }}
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-500 hover:bg-rose-600 rounded-lg transition-colors cursor-pointer"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 6000,
+      position: 'top-center',
+      style: {
+        background: '#0f172a',
+        border: '1px solid rgba(255,255,255,0.1)',
+        padding: '14px',
+        borderRadius: '16px',
       }
-    } catch (err) {
-      toast.error('Failed to delete event: ' + (err.response?.data?.message || err.message));
-    }
+    });
   };
 
   // Metrics
@@ -100,13 +131,6 @@ export const AdminDashboard = () => {
         {/* Sidebar Header — combined logo + user info */}
         <div className="px-5 py-5 border-b border-white/5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-9 h-9 rounded-xl bg-brand-500/20 flex items-center justify-center shrink-0">
-              <Shield className="w-5 h-5 text-brand-400" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">Admin Panel</p>
-              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Control Center</p>
-            </div>
           </div>
 
           <div className="flex items-center gap-3 bg-brand-500/5 border border-brand-500/10 rounded-xl px-3 py-2.5">
