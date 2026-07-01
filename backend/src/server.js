@@ -16,7 +16,9 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = socketIo(server, {
   cors: {
-    origin: '*', // For production development restrict origin appropriately
+    origin: process.env.NODE_ENV === 'production' && process.env.ALLOWED_ORIGINS 
+      ? process.env.ALLOWED_ORIGINS.split(',') 
+      : '*', 
     methods: ['GET', 'POST']
   }
 });

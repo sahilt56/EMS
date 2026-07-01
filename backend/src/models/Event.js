@@ -75,4 +75,9 @@ const eventSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Database performance optimizations
+eventSchema.index({ organizer: 1 });
+eventSchema.index({ date: 1 });
+eventSchema.index({ title: 'text', description: 'text' });
+
 module.exports = mongoose.model('Event', eventSchema);

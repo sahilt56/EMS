@@ -43,13 +43,22 @@ const initiateBooking = async (req, res, next) => {
     const result = await runAtomic(async (session) => {
       const sessionOpts = session ? { session } : {};
       
-      const event = await Event.findById(eventId).setOptions(sessionOpts);
-      if (!event) {
-        throw new CustomError('Associated event not found.', 404);
-      }
+      // Atomically check capacity and lock the tickets by incrementing ticketsSold
+      const event = await Event.findOneAndUpdate(
+        {
+          _id: eventId,
+          $expr: { $gte: [{ $subtract: ["$capacity", "$ticketsSold"] }, Number(ticketCount)] }
+        },
+        { $inc: { ticketsSold: Number(ticketCount) } },
+        { new: true, ...sessionOpts }
+      );
 
-      // Check current capacity availability
-      if (event.ticketsSold + Number(ticketCount) > event.capacity) {
+      if (!event) {
+        // Find if event exists to throw the correct error message
+        const exists = await Event.findById(eventId).setOptions(sessionOpts);
+        if (!exists) {
+          throw new CustomError('Associated event not found.', 404);
+        }
         throw new CustomError('Requested ticket count exceeds remaining capacity.', 400);
       }
 
@@ -65,8 +74,6 @@ const initiateBooking = async (req, res, next) => {
 
       // If event is free, complete booking transaction immediately
       if (event.price === 0) {
-        await Event.updateOne({ _id: event._id }, { $inc: { ticketsSold: Number(ticketCount) } }, sessionOpts);
-
         // Embed ticket verification data inside base64 QR code image
         const qrPayload = JSON.stringify({
           bookingId: booking._id,
@@ -116,6 +123,16 @@ const verifyPayment = async (req, res, next) => {
     // Verify signature authentic checksum
     const isValid = verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
     if (!isValid) {
+      // Revert the ticketsSold increment if payment verification fails
+      await runAtomic(async (session) => {
+        const sessionOpts = session ? { session } : {};
+        const booking = await Booking.findById(bookingId).setOptions(sessionOpts);
+        if (booking && booking.paymentStatus === 'Pending') {
+          booking.paymentStatus = 'Failed';
+          await booking.save(sessionOpts);
+          await Event.updateOne({ _id: booking.event }, { $inc: { ticketsSold: -booking.ticketCount } }, sessionOpts);
+        }
+      });
       return next(new CustomError('Payment authentication failed. Signature invalid.', 400));
     }
 
@@ -136,20 +153,10 @@ const verifyPayment = async (req, res, next) => {
         throw new CustomError('Associated event not found.', 404);
       }
 
-      // Check double-booking race condition inside transaction window
-      if (event.ticketsSold + booking.ticketCount > event.capacity) {
-        booking.paymentStatus = 'Failed';
-        await booking.save(sessionOpts);
-        throw new CustomError('Event sold out during payment processing.', 400);
-      }
-
       // Complete booking details
       booking.paymentStatus = 'Completed';
       booking.razorpayPaymentId = razorpayPaymentId;
       booking.razorpaySignature = razorpaySignature;
-
-      // Update tickets counts
-      await Event.updateOne({ _id: event._id }, { $inc: { ticketsSold: booking.ticketCount } }, sessionOpts);
 
       // Generate ticket check-in QR Code
       const qrPayload = JSON.stringify({

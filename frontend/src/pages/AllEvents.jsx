@@ -166,9 +166,9 @@ const AllEvents = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-3xl border-2 border-slate-100">
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">No Events Found</h3>
-            <p className="text-slate-500">Check back later for exciting new events!</p>
+          <div className="text-center py-20 bg-slate-900/50 rounded-[2rem] border border-white/5 backdrop-blur-sm">
+            <h3 className="text-2xl font-bold text-white mb-2">No Events Found</h3>
+            <p className="text-slate-400">Check back later for exciting new events!</p>
           </div>
         )}
       </main>

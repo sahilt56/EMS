@@ -48,4 +48,8 @@ const bookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Database performance optimizations
+bookingSchema.index({ user: 1, createdAt: -1 });
+bookingSchema.index({ event: 1 });
+
 module.exports = mongoose.model('Booking', bookingSchema);

@@ -66,7 +66,7 @@ export const Lounge = () => {
     }
 
     // Connect to backend Socket.io server passing token during handshake authentication
-    const serverUrl = import.meta.env.VITE_WS_URL || 'http://192.168.1.5:5000';
+    const serverUrl = import.meta.env.VITE_WS_URL || window.location.origin;
     const socket = io(serverUrl, {
       auth: { token }
     });
@@ -195,7 +195,7 @@ export const Lounge = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow h-[65vh]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-grow h-auto lg:h-[65vh]">
         {/* Chat Feeds Window */}
         <Card className="lg:col-span-3 border border-darkBorder p-0 flex flex-col h-full overflow-hidden">
           {/* Scrollable messages container */}

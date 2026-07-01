@@ -48,10 +48,7 @@ const getEvents = async (req, res, next) => {
     const query = {};
 
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+      query.$text = { $search: search };
     }
 
     if (category) {
@@ -60,7 +57,6 @@ const getEvents = async (req, res, next) => {
 
     if (location) {
       query.$or = [
-        ...(query.$or || []),
         { location: { $regex: location, $options: 'i' } },
         { city: { $regex: location, $options: 'i' } }
       ];
